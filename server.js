@@ -9,16 +9,23 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import Parser from "rss-parser";
 
 const app = express();
-const port = process.env.PORT || 10000;
+const port = Number(process.env.PORT) || 10000;
 const root = path.dirname(fileURLToPath(import.meta.url));
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: "100kb" }));
-app.use(express.static(path.join(root, "public")));
 
-const supabaseReady =
+// Serve the homepage from the repository root.
+// index.html is NOT inside a public folder.
+app.get("/", (_req, res) => {
+  res.sendFile(path.join(root, "index.html"));
+});
+
+// Initialize Supabase only when server-side credentials exist.
+const supabaseReady = Boolean(
   process.env.SUPABASE_URL &&
-  process.env.SUPABASE_SERVICE_ROLE_KEY;
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 const db = supabaseReady
   ? createClient(
@@ -27,19 +34,14 @@ const db = supabaseReady
     )
   : null;
 
+// Initialize Gemini only when an API key exists.
 const ai = process.env.GEMINI_API_KEY
   ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
   : null;
 
 const parser = new Parser();
 
-app.get("/api/config", (_req, res) => {
-  res.json({
-    supabaseUrl: process.env.SUPABASE_URL || "",
-    supabaseAnonKey: process.env.SUPABASE_ANON_KEY || ""
-  });
-});
-
+// Health check
 app.get("/api/health", (_req, res) => {
   res.json({
     status: "online",
@@ -48,122 +50,181 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
+// Public browser configuration.
+// The publishable/anon key is designed for browser use.
+// Never expose the service-role key.
+app.get("/api/config", (_req, res) => {
+  res.json({
+    supabaseUrl: process.env.SUPABASE_URL || "",
+    supabaseAnonKey: process.env.SUPABASE_ANON_KEY || ""
+  });
+});
+
+// Published news
 app.get("/api/news", async (_req, res) => {
   if (!db) {
     return res.status(503).json({
-      error: "Supabase configure karo."
+      error: "Supabase is not configured on the server."
     });
   }
 
-  const { data, error } = await db
-    .from("articles")
-    .select("*")
-    .eq("is_published", true)
-    .order("published_at", { ascending: false })
-    .limit(30);
+  try {
+    const { data, error } = await db
+      .from("articles")
+      .select(
+        "id,title,summary,body,category,city,author_name,source_urls,published_at,created_at"
+      )
+      .eq("is_published", true)
+      .order("published_at", { ascending: false })
+      .limit(30);
 
-  if (error) {
-    return res.status(500).json({ error: error.message });
+    if (error) {
+      console.error("News query failed:", error.message);
+      return res.status(500).json({
+        error: "Could not load news."
+      });
+    }
+
+    return res.json({ articles: data || [] });
+  } catch (error) {
+    console.error("News endpoint failed:", error);
+    return res.status(500).json({
+      error: "Internal server error."
+    });
   }
-
-  res.json({ articles: data });
 });
 
+// Open public debates
 app.get("/api/debates", async (_req, res) => {
   if (!db) {
-    return res.status(503).json({ error: "Database not configured." });
+    return res.status(503).json({
+      error: "Supabase is not configured on the server."
+    });
   }
 
-  const { data, error } = await db
-    .from("debates")
-    .select("*")
-    .eq("status", "open")
-    .order("created_at", { ascending: false });
+  try {
+    const { data, error } = await db
+      .from("debates")
+      .select("id,title,description,status,created_at")
+      .eq("status", "open")
+      .order("created_at", { ascending: false })
+      .limit(50);
 
-  if (error) {
-    return res.status(500).json({ error: error.message });
+    if (error) {
+      console.error("Debates query failed:", error.message);
+      return res.status(500).json({
+        error: "Could not load debates."
+      });
+    }
+
+    return res.json({ debates: data || [] });
+  } catch (error) {
+    console.error("Debates endpoint failed:", error);
+    return res.status(500).json({
+      error: "Internal server error."
+    });
   }
-
-  res.json({ debates: data });
 });
 
+// Today's e-paper edition
 app.get("/api/edition", async (_req, res) => {
   if (!db) {
-    return res.status(503).json({ error: "Database not configured." });
+    return res.status(503).json({
+      error: "Supabase is not configured on the server."
+    });
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const today = new Date().toISOString().slice(0, 10);
 
-  const { data, error } = await db
-    .from("editions")
-    .select("*")
-    .eq("edition_date", today)
-    .maybeSingle();
+    const { data, error } = await db
+      .from("editions")
+      .select("*")
+      .eq("edition_date", today)
+      .maybeSingle();
 
-  if (error) {
-    return res.status(500).json({ error: error.message });
+    if (error) {
+      console.error("Edition query failed:", error.message);
+      return res.status(500).json({
+        error: "Could not load the e-paper."
+      });
+    }
+
+    return res.json({ edition: data || null });
+  } catch (error) {
+    console.error("Edition endpoint failed:", error);
+    return res.status(500).json({
+      error: "Internal server error."
+    });
   }
-
-  res.json({ edition: data });
 });
 
 /*
-  Basic RSS research endpoint.
-  AI-generated output is NOT automatically treated as verified news.
-  Only feeds you are permitted to use should be configured.
-*/
+ * Research endpoint:
+ * - Reads only RSS feeds configured by the site owner.
+ * - Generates a draft, not a verified news report.
+ * - Never publishes the draft automatically.
+ */
 app.post("/api/research", async (req, res) => {
   if (!ai) {
-    return res.status(503).json({ error: "Gemini API key missing." });
+    return res.status(503).json({
+      error: "GEMINI_API_KEY is not configured."
+    });
   }
 
-  const topic = String(req.body.topic || "").trim().slice(0, 150);
+  const topic = String(req.body?.topic || "").trim().slice(0, 150);
 
   if (!topic) {
-    return res.status(400).json({ error: "Topic required." });
+    return res.status(400).json({
+      error: "Please provide a topic."
+    });
   }
 
   const feeds = (process.env.NEWS_FEEDS || "")
     .split(",")
-    .map(x => x.trim())
-    .filter(Boolean);
+    .map((url) => url.trim())
+    .filter(Boolean)
+    .slice(0, 5);
 
-  if (!feeds.length) {
+  if (feeds.length === 0) {
     return res.status(400).json({
-      error: "Add permitted RSS feed URLs to NEWS_FEEDS first."
+      error: "Configure permitted RSS URLs in NEWS_FEEDS first."
     });
   }
 
   try {
     const results = [];
 
-    for (const url of feeds.slice(0, 5)) {
+    for (const url of feeds) {
       try {
         const feed = await parser.parseURL(url);
 
-        const matching = (feed.items || [])
-          .filter(item =>
-            String(item.title || "")
-              .toLowerCase()
-              .includes(topic.toLowerCase())
-          )
+        const matchingItems = (feed.items || [])
+          .filter((item) => {
+            const text = [
+              item.title || "",
+              item.contentSnippet || ""
+            ].join(" ").toLowerCase();
+
+            return text.includes(topic.toLowerCase());
+          })
           .slice(0, 5)
-          .map(item => ({
-            title: item.title,
-            link: item.link,
+          .map((item) => ({
+            title: item.title || "",
+            link: item.link || "",
             date: item.isoDate || item.pubDate || null,
             snippet: String(item.contentSnippet || "").slice(0, 400)
           }));
 
-        results.push(...matching);
+        results.push(...matchingItems);
       } catch (error) {
-        console.error("Feed failed:", error.message);
+        console.error("RSS feed failed:", error.message);
       }
     }
 
-    if (!results.length) {
+    if (results.length === 0) {
       return res.status(404).json({
-        error: "No matching feed headlines found. Nothing published."
+        error: "No matching headlines found. Nothing was published."
       });
     }
 
@@ -173,35 +234,62 @@ app.post("/api/research", async (req, res) => {
 
     const prompt = `
 You are a cautious news research assistant.
-Use only the supplied RSS metadata.
-Do not invent facts, quotes, photos, dates or locations.
-If the evidence is insufficient, say so.
-Return JSON with keys: headline, summary, draft, limitations.
-This is a research draft, NOT verified news.
-Include uncertainty and never claim independent verification.
 
-Topic: ${topic}
-Feed items: ${JSON.stringify(results)}
+Use only the supplied RSS metadata and snippets.
+Do not invent facts, quotes, dates, images, or locations.
+Clearly identify uncertainty and missing information.
+Do not claim that facts have been independently verified.
+Do not reproduce full source articles.
+
+Return a concise JSON object with these keys:
+headline, summary, draft, limitations.
+
+This is an unpublished research draft, not verified news.
+
+Topic:
+${topic}
+
+RSS evidence:
+${JSON.stringify(results)}
 `;
 
     const response = await model.generateContent(prompt);
+    const draft = response.response.text();
 
-    res.json({
-      draft: response.response.text(),
+    return res.json({
+      draft,
       sources: results,
       published: false,
-      note: "Research draft only. Verification is still required."
+      note: "Research draft only. Verify facts before publication."
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Research request failed." });
+    console.error("Research request failed:", error);
+    return res.status(500).json({
+      error: "Research request failed."
+    });
   }
 });
 
-app.get("*path", (_req, res) => {
-  res.sendFile(path.join(root, "public", "index.html"));
+// Unknown API endpoints should return JSON, not the homepage.
+app.all("/api/*path", (_req, res) => {
+  res.status(404).json({
+    error: "API endpoint not found."
+  });
 });
 
-app.listen(port, () => {
+// Send the homepage for other browser page routes.
+app.get("*path", (_req, res) => {
+  res.sendFile(path.join(root, "index.html"));
+});
+
+// Handle unexpected errors.
+app.use((error, _req, res, _next) => {
+  console.error("Server error:", error);
+  res.status(500).json({
+    error: "Internal server error."
+  });
+});
+
+app.listen(port, "0.0.0.0", () => {
   console.log(`GENWIRE running on port ${port}`);
 });
