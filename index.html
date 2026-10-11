@@ -4,274 +4,492 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f7f6f2">
+<meta name="description" content="GENWIRE — independent-minded, source-linked news with context for the next generation.">
 <title>GENWIRE | Beyond the Noise</title>
+
 <style>
 :root {
-  --black:#111;
+  --black:#111111;
   --white:#f7f6f2;
   --red:#e53935;
+  --red-dark:#bd2522;
   --line:#dedbd4;
+  --muted:#696861;
+  --green:#16794b;
+  --radius:14px;
+  --shadow:0 8px 28px #19191908;
 }
 * { box-sizing:border-box; }
+html { scroll-behavior:smooth; scroll-padding-top:100px; }
 body {
   margin:0;
   color:var(--black);
   background:var(--white);
-  font-family:Arial,sans-serif;
+  font-family:Arial,Helvetica,sans-serif;
+  line-height:1.6;
 }
-.wrap { width:min(1100px,92%); margin:auto; }
+a { color:inherit; }
+button,input,textarea,select { font:inherit; }
+button,.button {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  border:0;
+  border-radius:7px;
+  padding:12px 17px;
+  background:var(--red);
+  color:white;
+  font-weight:800;
+  text-decoration:none;
+  cursor:pointer;
+  transition:background .2s,transform .2s;
+}
+button:hover,.button:hover { background:var(--red-dark); }
+button:active,.button:active { transform:scale(.98); }
+button:disabled { opacity:.6; cursor:wait; }
+button:focus-visible,a:focus-visible,input:focus-visible,
+textarea:focus-visible,select:focus-visible {
+  outline:3px solid #e5393570;
+  outline-offset:3px;
+}
+.wrap { width:min(1100px,92%); margin-inline:auto; }
 .top {
   background:var(--black);
   color:white;
-  padding:9px 0;
-  font-size:11px;
-  letter-spacing:1px;
+  padding:8px 0;
+  font-size:10px;
+  letter-spacing:1.2px;
+}
+.top-inner {
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
 }
 header {
   position:sticky;
   top:0;
-  z-index:3;
-  background:#f7f6f2ee;
-  backdrop-filter:blur(12px);
+  z-index:10;
+  background:#f7f6f2f2;
+  backdrop-filter:blur(14px);
   border-bottom:1px solid var(--line);
 }
 .nav {
-  padding:17px 0;
+  padding:14px 0;
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:18px;
   flex-wrap:wrap;
 }
+.brand { text-decoration:none; color:inherit; line-height:1.1; }
 .logo {
-  font-size:36px;
+  font-size:34px;
   font-weight:1000;
   letter-spacing:-2px;
 }
 .logo span { color:var(--red); }
-nav { display:flex; gap:14px; flex-wrap:wrap; }
+.tagline { font-size:9px; color:var(--muted); letter-spacing:1.4px; }
+nav { display:flex; gap:15px; flex-wrap:wrap; align-items:center; }
 nav a {
-  font-size:11px;
-  font-weight:bold;
+  font-size:10px;
+  font-weight:900;
   text-decoration:none;
-  color:inherit;
+  letter-spacing:.4px;
 }
-.ticker { background:var(--red); color:white; padding:10px; }
+nav a:hover { color:var(--red); }
+.ticker { background:var(--red); color:white; padding:9px 0; }
+.ticker-inner { font-size:11px; font-weight:bold; letter-spacing:.4px; }
 .hero {
-  background:#111;
+  background:var(--black);
   color:white;
   margin-top:24px;
-  padding:clamp(25px,5vw,55px);
-  min-height:340px;
+  padding:clamp(27px,5vw,58px);
+  min-height:360px;
   display:flex;
   flex-direction:column;
   justify-content:end;
   overflow:hidden;
   position:relative;
+  border-radius:var(--radius);
 }
 .hero:after {
   content:"";
   position:absolute;
-  width:300px;height:300px;
-  right:-70px;top:-90px;
+  width:300px;
+  height:300px;
+  right:-70px;
+  top:-90px;
   border:1px solid #e5393577;
   border-radius:50%;
   box-shadow:0 0 0 35px #e5393511,0 0 0 70px #e5393509;
   animation:float 8s ease-in-out infinite alternate;
+  pointer-events:none;
 }
 @keyframes float {
   to { transform:translate(-35px,40px) rotate(25deg); }
 }
 .hero>* { position:relative; z-index:1; }
-.kicker { color:#ff5752; font-weight:bold; letter-spacing:2px; }
+.kicker { color:#ff6862; font-weight:bold; letter-spacing:2px; font-size:11px; }
 h1 {
   font-size:clamp(43px,8vw,85px);
-  line-height:.92;
+  line-height:.94;
   letter-spacing:-4px;
-  margin:16px 0;
+  margin:17px 0;
 }
 h1 span { color:#ff5752; }
-.hero p { max-width:600px; color:#ddd; }
-button,.button {
-  display:inline-block;
-  border:0;
-  padding:12px 16px;
-  background:var(--red);
-  color:white;
-  font-weight:bold;
-  cursor:pointer;
-  text-decoration:none;
-}
+.hero p { max-width:610px; color:#dedede; }
+.hero-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+.button.secondary { background:transparent; border:1px solid #ffffff50; }
+.button.secondary:hover { background:#ffffff14; }
 .section {
   display:flex;
   justify-content:space-between;
-  align-items:center;
-  border-bottom:3px solid;
-  margin:35px 0 16px;
-  padding-bottom:8px;
+  align-items:end;
+  gap:15px;
+  border-bottom:3px solid var(--black);
+  margin:38px 0 16px;
+  padding-bottom:9px;
+  scroll-margin-top:100px;
 }
-.section h2 { margin:0; font-size:26px; }
-.small { font-size:11px; color:#666; }
+.section h2 { margin:0; font-size:clamp(21px,4vw,27px); line-height:1.2; }
+.small { font-size:11px; color:var(--muted); }
 .panel,.story {
-  padding:20px;
+  padding:clamp(16px,3vw,23px);
   background:white;
   border:1px solid var(--line);
-  margin-bottom:12px;
+  border-radius:var(--radius);
+  margin-bottom:13px;
+  box-shadow:var(--shadow);
+  min-width:0;
 }
-.story h3 { font-size:23px; line-height:1.15; }
-.story p { color:#444; }
+.panel h3,.story h3 { margin-top:5px; }
+.story { transition:transform .2s,border-color .2s; }
+.story:hover { border-color:#c8c2b8; }
+.story h3 { font-size:clamp(20px,4vw,26px); line-height:1.2; overflow-wrap:anywhere; }
+.story p { color:#41413d; }
 .pill {
-  background:#eee;
+  display:inline-block;
+  background:#f1eee9;
+  border-radius:4px;
   padding:4px 8px;
   font-size:10px;
-  font-weight:bold;
+  font-weight:900;
+  text-transform:uppercase;
 }
+.pill.red { background:#ffe8e6; color:#a92320; }
 .source { font-size:12px; overflow-wrap:anywhere; }
-.grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.source a { color:#a92320; font-weight:bold; }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
 input,textarea,select {
   width:100%;
-  padding:11px;
-  border:1px solid #ccc;
-  background:white;
-  margin:6px 0 12px;
-  font:inherit;
+  border-radius:7px;
+  padding:12px;
+  border:1px solid #d1cec7;
+  background:#fff;
+  margin:6px 0 14px;
+  color:var(--black);
 }
-textarea { min-height:100px; }
-label { font-size:12px; font-weight:bold; }
-.status { font-size:12px; white-space:pre-wrap; }
-footer { margin-top:40px; background:#111; color:white; padding:30px 0; }
+textarea { min-height:130px; resize:vertical; }
+label { display:block; font-size:12px; font-weight:bold; }
+.status { font-size:12px; white-space:pre-wrap; overflow-wrap:anywhere; }
+.status:empty { display:none; }
+.status.error { color:#b42318; }
+.status.success { color:var(--green); }
+.empty { color:var(--muted); font-size:14px; }
+.loading { display:flex; align-items:center; gap:10px; }
+.spinner {
+  width:16px;
+  height:16px;
+  border:2px solid #ddd;
+  border-top-color:var(--red);
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+  flex-shrink:0;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+.research-result { margin-top:18px; }
+.research-draft {
+  background:#faf9f6;
+  border:1px solid var(--line);
+  padding:16px;
+  border-radius:9px;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  font:14px/1.75 Arial,sans-serif;
+}
+.source-item { border-top:1px solid var(--line); padding:12px 0; }
+.source-item:first-child { border-top:0; }
+.source-item a { font-weight:bold; color:#a92320; }
+.source-item p { margin:5px 0; font-size:12px; color:var(--muted); }
+.note {
+  border-left:3px solid var(--red);
+  background:#fff4f2;
+  padding:12px 14px;
+  font-size:12px;
+  border-radius:0 7px 7px 0;
+}
+details summary { cursor:pointer; font-weight:bold; font-size:13px; }
+footer { margin-top:48px; background:#111; color:white; padding:32px 0; }
 footer p { color:#bbb; font-size:12px; }
+.footer-row { display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap; }
+footer a { color:#ddd; font-size:12px; }
+hr { border:0; border-top:1px solid var(--line); margin:20px 0; }
+[hidden] { display:none !important; }
+
 @media(max-width:700px) {
   .grid { grid-template-columns:1fr; }
   h1 { letter-spacing:-2px; }
+  .nav { align-items:flex-start; }
+  nav { gap:12px; }
+  nav a { font-size:10px; }
+  .hero { min-height:340px; }
+  .section { align-items:flex-start; flex-direction:column; gap:4px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  *,*::before,*::after {
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    scroll-behavior:auto !important;
+    transition-duration:.01ms !important;
+  }
 }
 </style>
 </head>
+
 <body>
-<div class="top"><div class="wrap">INDEPENDENT-MINDED · SOURCE-LINKED · GEN Z NEWS</div></div>
+<div class="top">
+  <div class="wrap top-inner">
+    <span>INDEPENDENT-MINDED · SOURCE-LINKED · GEN Z NEWS</span>
+    <span id="serverStatus">CONNECTING TO NEWSROOM…</span>
+  </div>
+</div>
 
 <header>
-<div class="wrap nav">
-  <a href="#" style="color:inherit;text-decoration:none">
-    <div class="logo">GEN<span>WIRE</span></div>
-    <div class="small">BEYOND THE NOISE</div>
-  </a>
-  <nav>
-    <a href="#latest">LATEST</a>
-    <a href="#epaper">E-PAPER</a>
-    <a href="#debates">DEBATES</a>
-    <a href="#citizen">WRITE</a>
-    <a href="#account">ACCOUNT</a>
-  </nav>
-</div>
+  <div class="wrap nav">
+    <a class="brand" href="#" aria-label="GENWIRE home">
+      <div class="logo">GEN<span>WIRE</span></div>
+      <div class="tagline">BEYOND THE NOISE</div>
+    </a>
+    <nav aria-label="Main navigation">
+      <a href="#latest">LATEST</a>
+      <a href="#ai-research">AI NEWSROOM</a>
+      <a href="#epaper">E-PAPER</a>
+      <a href="#debates">DEBATES</a>
+      <a href="#citizen">WRITE</a>
+      <a href="#account">ACCOUNT</a>
+    </nav>
+  </div>
 </header>
 
 <div class="ticker">
-<div class="wrap">GENWIRE NEWSROOM — Read the sources. Question the claims.</div>
+  <div class="wrap ticker-inner">
+    GENWIRE NEWSROOM — Read the sources. Question the claims.
+  </div>
 </div>
 
 <main class="wrap">
-<section class="hero">
-<div class="kicker">THE DAILY BRIEFING</div>
-<h1>THE WORLD.<br><span>WITH CONTEXT.</span></h1>
-<p>News, ideas and citizen voices for the next generation. No made-up headlines. No invented photographs.</p>
-<a class="button" href="#latest">Explore the newsroom ↓</a>
-</section>
+  <section class="hero">
+    <div class="kicker">THE DAILY BRIEFING</div>
+    <h1>THE WORLD.<br><span>WITH CONTEXT.</span></h1>
+    <p>
+      News, ideas and citizen voices for the next generation.
+      No made-up headlines. No invented photographs.
+    </p>
+    <div class="hero-actions">
+      <a class="button" href="#latest">Explore the newsroom ↓</a>
+      <a class="button secondary" href="#ai-research">Open AI Newsroom ↗</a>
+    </div>
+  </section>
 
-<div class="section" id="latest">
-<h2>THE LATEST</h2><span class="small">SOURCE-LINKED REPORTS</span>
-</div>
-<div id="news"><div class="panel">Loading news…</div></div>
+  <section class="section" id="latest">
+    <h2>THE LATEST</h2>
+    <span class="small">SOURCE-LINKED REPORTS</span>
+  </section>
+  <div id="news" aria-live="polite">
+    <div class="panel loading"><span class="spinner"></span>Loading published news…</div>
+  </div>
 
-<div class="section" id="epaper">
-<h2>THE E-PAPER</h2><span class="small">DAILY EDITION</span>
-</div>
-<div class="panel" id="edition">Checking today's edition…</div>
+  <section class="section" id="ai-research">
+    <h2>AI NEWSROOM</h2>
+    <span class="small">RESEARCH · REVIEW · VERIFY</span>
+  </section>
 
-<div class="section" id="debates">
-<h2>PUBLIC DEBATE</h2><span class="small">YOUR VIEW MATTERS</span>
-</div>
-<div id="debatesList" class="panel">Loading public debates…</div>
+  <div class="panel">
+    <span class="pill red">EDITORIAL RESEARCH TOOL</span>
+    <h3>Turn a topic into a research draft.</h3>
+    <p class="small">
+      Search configured RSS feeds and ask AI to organize the available evidence.
+      Only matching headlines are considered by the current backend.
+    </p>
 
-<div class="section" id="citizen">
-<h2>CITIZEN VOICES</h2><span class="small">ARTICLES BY READERS</span>
-</div>
-<div class="panel">
-<p>Have an opinion or a reported story? Submit it for review.</p>
-<p class="small">Citizen submissions must remain separate from AI newsroom reports.</p>
-</div>
+    <form id="researchForm">
+      <label for="researchTopic">What do you want to research?</label>
+      <input
+        id="researchTopic"
+        name="topic"
+        maxlength="150"
+        placeholder="e.g. technology, climate, education"
+        autocomplete="off"
+        required
+      >
+      <button id="researchButton" type="submit">Generate research draft ↗</button>
+    </form>
 
-<div class="section" id="account">
-<h2>YOUR ACCOUNT</h2><span class="small">SIGN IN / SIGN UP</span>
-</div>
-<div class="grid">
-<form class="panel" id="signup">
-<h3>Create your account</h3>
-<label>Display name</label>
-<input id="name" required maxlength="60">
-<label>Email</label>
-<input id="signupEmail" type="email" required>
-<label>Password</label>
-<input id="signupPassword" type="password" minlength="8" required>
-<button>Create account</button>
-<p id="signupStatus" class="status"></p>
-</form>
+    <p id="researchStatus" class="status" role="status" aria-live="polite"></p>
+    <div id="researchResult" class="research-result"></div>
 
-<form class="panel" id="signin">
-<h3>Welcome back</h3>
-<label>Email</label>
-<input id="loginEmail" type="email" required>
-<label>Password</label>
-<input id="loginPassword" type="password" required>
-<button>Sign in</button>
-<button type="button" id="logout" style="background:#111">Sign out</button>
-<p id="authStatus" class="status">Checking account setup…</p>
-</form>
-</div>
+    <hr>
+    <div class="note">
+      <strong>Editorial rule:</strong> AI output is an unpublished draft,
+      not verified news. Check the original sources and every important claim
+      before considering publication.
+    </div>
+  </div>
+
+  <section class="section" id="epaper">
+    <h2>THE E-PAPER</h2>
+    <span class="small">DAILY EDITION</span>
+  </section>
+  <div class="panel" id="edition" aria-live="polite">
+    <div class="loading"><span class="spinner"></span>Checking today's edition…</div>
+  </div>
+
+  <section class="section" id="debates">
+    <h2>PUBLIC DEBATE</h2>
+    <span class="small">YOUR VIEW MATTERS</span>
+  </section>
+  <div id="debatesList" class="panel" aria-live="polite">
+    <div class="loading"><span class="spinner"></span>Loading public debates…</div>
+  </div>
+
+  <section class="section" id="citizen">
+    <h2>CITIZEN VOICES</h2>
+    <span class="small">ARTICLES BY READERS</span>
+  </section>
+  <div class="panel">
+    <h3>Have a story or an opinion?</h3>
+    <p>GENWIRE welcomes thoughtful citizen voices.</p>
+    <p class="small">
+      Reader submissions should be reviewed separately from AI-generated
+      research and verified newsroom reporting.
+    </p>
+    <p class="small">
+      Citizen submission publishing is not connected yet. This panel does not
+      send or save articles.
+    </p>
+  </div>
+
+  <section class="section" id="account">
+    <h2>YOUR ACCOUNT</h2>
+    <span class="small">SIGN IN / SIGN UP</span>
+  </section>
+
+  <div class="grid">
+    <form class="panel" id="signup">
+      <h3>Create your account</h3>
+      <label for="name">Display name</label>
+      <input id="name" autocomplete="nickname" required maxlength="60">
+
+      <label for="signupEmail">Email</label>
+      <input id="signupEmail" type="email" autocomplete="email" required>
+
+      <label for="signupPassword">Password</label>
+      <input
+        id="signupPassword"
+        type="password"
+        autocomplete="new-password"
+        minlength="8"
+        required
+      >
+
+      <button id="signupButton" type="submit">Create account</button>
+      <p id="signupStatus" class="status" role="status" aria-live="polite"></p>
+    </form>
+
+    <form class="panel" id="signin">
+      <h3>Welcome back</h3>
+      <label for="loginEmail">Email</label>
+      <input id="loginEmail" type="email" autocomplete="email" required>
+
+      <label for="loginPassword">Password</label>
+      <input
+        id="loginPassword"
+        type="password"
+        autocomplete="current-password"
+        required
+      >
+
+      <div class="hero-actions">
+        <button id="signinButton" type="submit">Sign in</button>
+        <button type="button" id="logout" style="background:#111">Sign out</button>
+      </div>
+      <p id="authStatus" class="status" role="status" aria-live="polite">
+        Checking account setup…
+      </p>
+    </form>
+  </div>
 </main>
 
-<footer><div class="wrap">
-<div class="logo">GEN<span>WIRE</span></div>
-<p>Beyond the noise. Built for curious minds.</p>
-<p>AI-generated content may be wrong. Always check linked sources.</p>
-</div></footer>
+<footer>
+  <div class="wrap">
+    <div class="footer-row">
+      <div>
+        <div class="logo">GEN<span>WIRE</span></div>
+        <p>Beyond the noise. Built for curious minds.</p>
+      </div>
+      <div>
+        <p><a href="#latest">Latest news</a></p>
+        <p><a href="#ai-research">AI newsroom</a></p>
+        <p><a href="#account">Your account</a></p>
+      </div>
+    </div>
+    <hr style="border-color:#393939">
+    <p>
+      AI-generated content may be wrong. Always check linked sources.
+      Research drafts are not automatically published.
+    </p>
+    <p>© <span id="year"></span> GENWIRE</p>
+  </div>
+</footer>
 
 <script type="module">
 import { createClient } from
   "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 const $ = id => document.getElementById(id);
-const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g, c => ({
-  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-}[c]));
 
-let supabase;
-let session;
+let supabase = null;
+let session = null;
+let authSubscription = null;
 
-async function start() {
-  try {
-    const config = await fetch("/api/config").then(r => r.json());
+function setStatus(element, message, type = "") {
+  element.textContent = message;
+  element.className = "status" + (type ? " " + type : "");
+}
 
-    if (config.supabaseUrl && config.supabaseAnonKey) {
-      supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
-      const result = await supabase.auth.getSession();
-      session = result.data.session;
-      showSession();
-
-      supabase.auth.onAuthStateChange((_event, next) => {
-        session = next;
-        showSession();
-      });
-    } else {
-      $("authStatus").textContent = "Supabase environment variables missing.";
-    }
-  } catch {
-    $("authStatus").textContent = "Backend is not ready yet.";
+function makeElement(tag, text, className = "") {
+  const element = document.createElement(tag);
+  if (text !== undefined && text !== null) {
+    element.textContent = String(text);
   }
+  if (className) element.className = className;
+  return element;
+}
 
-  loadNews();
-  loadEdition();
-  loadDebates();
+async function getJSON(url) {
+  const response = await fetch(url, {
+    headers: { Accept: "application/json" }
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error || `Request failed (${response.status}).`);
+  }
+  return data;
 }
 
 function showSession() {
@@ -280,120 +498,386 @@ function showSession() {
     : "You are signed out.";
 }
 
-async function loadNews() {
-  try {
-    const response = await fetch("/api/news");
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error);
+async function start() {
+  $("year").textContent = new Date().getFullYear();
 
-    if (!result.articles.length) {
-      $("news").innerHTML =
-        '<div class="panel">No verified/published stories yet.</div>';
+  try {
+    const health = await getJSON("/api/health");
+    $("serverStatus").textContent =
+      health.status === "online" ? "NEWSROOM ONLINE" : "CHECKING STATUS";
+  } catch {
+    $("serverStatus").textContent = "STATUS UNAVAILABLE";
+  }
+
+  try {
+    const config = await getJSON("/api/config");
+
+    if (config.supabaseUrl && config.supabaseAnonKey) {
+      supabase = createClient(
+        config.supabaseUrl,
+        config.supabaseAnonKey
+      );
+
+      const result = await supabase.auth.getSession();
+      session = result.data.session;
+      showSession();
+
+      const { data } = supabase.auth.onAuthStateChange((_event, next) => {
+        session = next;
+        showSession();
+      });
+      authSubscription = data.subscription;
+    } else {
+      $("authStatus").textContent =
+        "Supabase configuration is missing.";
+    }
+  } catch {
+    $("authStatus").textContent =
+      "Account service is not available right now.";
+  }
+
+  await Promise.allSettled([
+    loadNews(),
+    loadEdition(),
+    loadDebates()
+  ]);
+}
+
+async function loadNews() {
+  const container = $("news");
+
+  try {
+    const result = await getJSON("/api/news");
+    const articles = Array.isArray(result.articles) ? result.articles : [];
+
+    if (!articles.length) {
+      container.replaceChildren(
+        makeElement("div", "No published stories yet.", "panel empty")
+      );
       return;
     }
 
-    $("news").innerHTML = result.articles.map(article => `
-      <article class="story">
-        <span class="pill">${escapeHTML(article.category)}</span>
-        <h3>${escapeHTML(article.title)}</h3>
-        <p>${escapeHTML(article.summary)}</p>
-        <p class="small">By ${escapeHTML(article.author_name)} ·
-          ${article.published_at
-            ? new Date(article.published_at).toLocaleString()
-            : "Date unavailable"}
-        </p>
-        <details>
-          <summary>Read full article</summary>
-          <p>${escapeHTML(article.body)}</p>
-        </details>
-        <div class="source">
-          ${(article.source_urls || []).map(url =>
-            `<p><a href="${escapeHTML(url)}" target="_blank"
-            rel="noopener noreferrer">Read original source ↗</a></p>`
-          ).join("")}
-        </div>
-      </article>
-    `).join("");
+    const fragment = document.createDocumentFragment();
+
+    for (const article of articles) {
+      const card = makeElement("article", undefined, "story");
+      card.appendChild(makeElement("span", article.category || "News", "pill"));
+      card.appendChild(makeElement("h3", article.title || "Untitled story"));
+      card.appendChild(makeElement("p", article.summary || ""));
+
+      const published = article.published_at
+        ? new Date(article.published_at).toLocaleString()
+        : "Date unavailable";
+
+      card.appendChild(makeElement(
+        "p",
+        `By ${article.author_name || "GENWIRE"} · ${published}`,
+        "small"
+      ));
+
+      if (article.body) {
+        const details = document.createElement("details");
+        details.appendChild(makeElement("summary", "Read full article"));
+        details.appendChild(makeElement("p", article.body));
+        card.appendChild(details);
+      }
+
+      const sources = makeElement("div", undefined, "source");
+      for (const url of Array.isArray(article.source_urls)
+        ? article.source_urls : []) {
+        if (typeof url !== "string" ||
+            !/^https?:\/\//i.test(url)) continue;
+
+        const paragraph = document.createElement("p");
+        const link = makeElement("a", "Read original source ↗");
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        paragraph.appendChild(link);
+        sources.appendChild(paragraph);
+      }
+
+      card.appendChild(sources);
+      fragment.appendChild(card);
+    }
+
+    container.replaceChildren(fragment);
   } catch (error) {
-    $("news").textContent =
-      error.message || "News service is not configured.";
+    container.replaceChildren(
+      makeElement("div", error.message || "News service unavailable.", "panel")
+    );
   }
 }
 
 async function loadEdition() {
+  const container = $("edition");
+
   try {
-    const result = await fetch("/api/edition").then(r => r.json());
-    $("edition").innerHTML = result.edition
-      ? `<h3>${escapeHTML(result.edition.title)}</h3>
-         <p>${escapeHTML(result.edition.intro)}</p>`
-      : "Today's e-paper is not available yet.";
+    const result = await getJSON("/api/edition");
+
+    if (!result.edition) {
+      container.textContent = "Today's e-paper is not available yet.";
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    fragment.appendChild(makeElement("h3", result.edition.title || "Daily edition"));
+    fragment.appendChild(makeElement("p", result.edition.intro || ""));
+
+    container.replaceChildren(fragment);
   } catch {
-    $("edition").textContent = "E-paper service unavailable.";
+    container.textContent = "E-paper service unavailable.";
   }
 }
 
 async function loadDebates() {
+  const container = $("debatesList");
+
   try {
-    const result = await fetch("/api/debates").then(r => r.json());
-    $("debatesList").innerHTML = result.debates?.length
-      ? result.debates.map(debate => `
-          <article class="story">
-            <h3>${escapeHTML(debate.title)}</h3>
-            <p>${escapeHTML(debate.description)}</p>
-          </article>
-        `).join("")
-      : "No debate topics yet.";
+    const result = await getJSON("/api/debates");
+    const debates = Array.isArray(result.debates) ? result.debates : [];
+
+    if (!debates.length) {
+      container.textContent = "No debate topics yet.";
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+
+    for (const debate of debates) {
+      const card = makeElement("article", undefined, "story");
+      card.appendChild(makeElement("h3", debate.title || "Untitled debate"));
+      card.appendChild(makeElement("p", debate.description || ""));
+      fragment.appendChild(card);
+    }
+
+    container.replaceChildren(fragment);
   } catch {
-    $("debatesList").textContent = "Debate service is not configured.";
+    container.textContent = "Debate service is not available right now.";
   }
 }
+
+/*
+ * AI Research:
+ * Calls the existing backend endpoint.
+ * It displays a draft and sources; it does not publish anything.
+ */
+$("researchForm").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const topic = $("researchTopic").value.trim();
+  const button = $("researchButton");
+  const status = $("researchStatus");
+  const resultBox = $("researchResult");
+
+  if (!topic) {
+    setStatus(status, "Please enter a research topic.", "error");
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "Researching…";
+  resultBox.replaceChildren();
+
+  setStatus(status, "Checking configured RSS feeds…");
+
+  try {
+    const response = await fetch("/api/research", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic })
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(
+        result.error || `Research request failed (${response.status}).`
+      );
+    }
+
+    const fragment = document.createDocumentFragment();
+    fragment.appendChild(makeElement("h3", "AI Research Draft"));
+
+    if (result.published === true) {
+      fragment.appendChild(makeElement(
+        "p",
+        "The server reports this item as published. Verify its status before proceeding.",
+        "note"
+      ));
+    } else {
+      fragment.appendChild(makeElement(
+        "p",
+        "UNPUBLISHED · REQUIRES EDITORIAL REVIEW",
+        "pill red"
+      ));
+    }
+
+    /*
+     * Current backend returns result.draft as text.
+     * textContent is used to avoid rendering model output as HTML.
+     */
+    fragment.appendChild(
+      makeElement("div", result.draft || "No draft returned.", "research-draft")
+    );
+
+    fragment.appendChild(makeElement("h4", "Source headlines"));
+
+    const sources = Array.isArray(result.sources) ? result.sources : [];
+
+    if (!sources.length) {
+      fragment.appendChild(makeElement(
+        "p",
+        "The server returned no source items.",
+        "empty"
+      ));
+    }
+
+    for (const source of sources) {
+      const item = makeElement("div", undefined, "source-item");
+      const url = typeof source.link === "string" ? source.link : "";
+
+      if (/^https?:\/\//i.test(url)) {
+        const link = makeElement("a", source.title || "Open source");
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        item.appendChild(link);
+      } else {
+        item.appendChild(makeElement("strong", source.title || "Source link unavailable"));
+      }
+
+      if (source.date) {
+        item.appendChild(makeElement("p", `Date: ${source.date}`));
+      }
+      if (source.snippet) {
+        item.appendChild(makeElement("p", source.snippet));
+      }
+
+      fragment.appendChild(item);
+    }
+
+    if (result.note) {
+      fragment.appendChild(makeElement("p", result.note, "note"));
+    } else {
+      fragment.appendChild(makeElement(
+        "p",
+        "Verify facts against the original sources before publication.",
+        "note"
+      ));
+    }
+
+    resultBox.replaceChildren(fragment);
+    setStatus(status, "Research response received. Review every claim before publication.", "success");
+  } catch (error) {
+    setStatus(
+      status,
+      error.message || "Research failed. Please try again later.",
+      "error"
+    );
+  } finally {
+    button.disabled = false;
+    button.textContent = "Generate research draft ↗";
+  }
+});
 
 $("signup").addEventListener("submit", async event => {
   event.preventDefault();
 
+  const status = $("signupStatus");
+  const button = $("signupButton");
+
   if (!supabase) {
-    $("signupStatus").textContent = "Configure Supabase first.";
+    setStatus(status, "Supabase is not configured.", "error");
     return;
   }
 
-  const { data, error } = await supabase.auth.signUp({
-    email: $("signupEmail").value,
-    password: $("signupPassword").value,
-    options: {
-      data: { display_name: $("name").value.trim() }
-    }
-  });
+  button.disabled = true;
+  setStatus(status, "Creating account…");
 
-  $("signupStatus").textContent = error
-    ? error.message
-    : data.session
-      ? "Account created and signed in."
-      : "Account created. Check your email for confirmation.";
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email: $("signupEmail").value.trim(),
+      password: $("signupPassword").value,
+      options: {
+        data: { display_name: $("name").value.trim() }
+      }
+    });
+
+    if (error) throw error;
+
+    session = data.session;
+    showSession();
+
+    setStatus(
+      status,
+      data.session
+        ? "Account created and signed in."
+        : "Account created. Check your email if confirmation is required.",
+      "success"
+    );
+  } catch (error) {
+    setStatus(status, error.message || "Account creation failed.", "error");
+  } finally {
+    button.disabled = false;
+  }
 });
 
 $("signin").addEventListener("submit", async event => {
   event.preventDefault();
 
+  const status = $("authStatus");
+  const button = $("signinButton");
+
   if (!supabase) {
-    $("authStatus").textContent = "Configure Supabase first.";
+    setStatus(status, "Supabase is not configured.", "error");
     return;
   }
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: $("loginEmail").value,
-    password: $("loginPassword").value
-  });
+  button.disabled = true;
+  setStatus(status, "Signing in…");
 
-  $("authStatus").textContent = error
-    ? error.message
-    : "Signed in: " + data.user.email;
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: $("loginEmail").value.trim(),
+      password: $("loginPassword").value
+    });
+
+    if (error) throw error;
+
+    session = data.session;
+    showSession();
+    setStatus(status, "Signed in: " + data.user.email, "success");
+  } catch (error) {
+    setStatus(status, error.message || "Sign-in failed.", "error");
+  } finally {
+    button.disabled = false;
+  }
 });
 
 $("logout").addEventListener("click", async () => {
-  if (!supabase) return;
-  await supabase.auth.signOut();
-  session = null;
-  showSession();
+  if (!supabase) {
+    setStatus($("authStatus"), "Supabase is not configured.", "error");
+    return;
+  }
+
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+
+    session = null;
+    showSession();
+  } catch (error) {
+    setStatus(
+      $("authStatus"),
+      error.message || "Sign-out failed.",
+      "error"
+    );
+  }
+});
+
+window.addEventListener("beforeunload", () => {
+  authSubscription?.unsubscribe();
 });
 
 start();
