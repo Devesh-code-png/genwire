@@ -15,12 +15,10 @@ const root = path.dirname(fileURLToPath(import.meta.url));
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: "100kb" }));
 
-// Homepage
 app.get("/", (_req, res) => {
   res.sendFile(path.join(root, "index.html"));
 });
 
-// Supabase: service-role key remains server-side only.
 const supabaseReady = Boolean(
   process.env.SUPABASE_URL &&
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -33,47 +31,44 @@ const db = supabaseReady
     )
   : null;
 
-// Gemini
 const ai = process.env.GEMINI_API_KEY
   ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
   : null;
 
-const parser = new Parser({
-  timeout: 10000,
-  headers: {
-    "User-Agent": "GENWIRE-NewsResearch/1.0"
-  }
-});
+const parser = new Parser({ timeout: 10000 });
 
-// Basic in-memory rate limit for the public research endpoint.
-// This resets when the server restarts and is per server instance.
-const researchRequests = new Map();
-const RATE_WINDOW_MS = 60 * 1000;
-const RATE_MAX = 5;
+const adminEmails = new Set(
+  (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean)
+);
+
+// Basic per-instance rate limit for research generation.
+const requestCounts = new Map();
 
 function researchRateLimit(req, res, next) {
   const ip = req.ip || req.socket.remoteAddress || "unknown";
   const now = Date.now();
-  let record = researchRequests.get(ip);
+  let record = requestCounts.get(ip);
 
-  if (!record || now - record.start >= RATE_WINDOW_MS) {
+  if (!record || now - record.start >= 60000) {
     record = { start: now, count: 0 };
   }
 
   record.count += 1;
-  researchRequests.set(ip, record);
+  requestCounts.set(ip, record);
 
-  if (record.count > RATE_MAX) {
+  if (record.count > 5) {
     return res.status(429).json({
-      error: "Too many research requests. Please wait one minute."
+      error: "Too many research requests. Wait one minute."
     });
   }
 
-  // Keep the map from growing indefinitely.
-  if (researchRequests.size > 1000) {
-    for (const [key, value] of researchRequests) {
-      if (now - value.start >= RATE_WINDOW_MS) {
-        researchRequests.delete(key);
+  if (requestCounts.size > 1000) {
+    for (const [key, value] of requestCounts) {
+      if (now - value.start >= 60000) {
+        requestCounts.delete(key);
       }
     }
   }
@@ -81,17 +76,64 @@ function researchRateLimit(req, res, next) {
   next();
 }
 
-// Health check: confirms configuration, not successful AI generation.
+// Secure editor authentication:
+// Requires a valid Supabase access token and an allowlisted email.
+async function requireEditor(req, res, next) {
+  if (!db) {
+    return res.status(503).json({
+      error: "Editor authentication is not configured."
+    });
+  }
+
+  const authorization = req.headers.authorization || "";
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+
+  if (!match) {
+    return res.status(401).json({
+      error: "Please sign in as an authorized editor."
+    });
+  }
+
+  try {
+    const { data, error } = await db.auth.getUser(match[1]);
+
+    if (error || !data?.user) {
+      return res.status(401).json({
+        error: "Your session is invalid or expired."
+      });
+    }
+
+    const email = String(data.user.email || "").toLowerCase();
+
+    if (!email || !adminEmails.has(email)) {
+      return res.status(403).json({
+        error: "This account is not authorized to edit articles."
+      });
+    }
+
+    req.editor = {
+      id: data.user.id,
+      email
+    };
+
+    next();
+  } catch (error) {
+    console.error("Editor authentication failed:", error.message);
+    return res.status(401).json({
+      error: "Could not verify editor session."
+    });
+  }
+}
+
 app.get("/api/health", (_req, res) => {
   res.json({
     status: "online",
     database: Boolean(db),
-    ai: Boolean(ai)
+    ai: Boolean(ai),
+    editorConfigured: adminEmails.size > 0
   });
 });
 
-// Public browser configuration.
-// Never return the Supabase service-role key here.
 app.get("/api/config", (_req, res) => {
   res.json({
     supabaseUrl: process.env.SUPABASE_URL || "",
@@ -103,7 +145,7 @@ app.get("/api/config", (_req, res) => {
 app.get("/api/news", async (_req, res) => {
   if (!db) {
     return res.status(503).json({
-      error: "Supabase is not configured on the server."
+      error: "Supabase is not configured."
     });
   }
 
@@ -117,27 +159,22 @@ app.get("/api/news", async (_req, res) => {
       .order("published_at", { ascending: false })
       .limit(30);
 
-    if (error) {
-      console.error("News query failed:", error.message);
-      return res.status(500).json({
-        error: "Could not load news."
-      });
-    }
+    if (error) throw error;
 
     return res.json({ articles: data || [] });
   } catch (error) {
-    console.error("News endpoint failed:", error.message);
+    console.error("News query failed:", error.message);
     return res.status(500).json({
-      error: "Internal server error."
+      error: "Could not load news."
     });
   }
 });
 
-// Open public debates
+// Open debates
 app.get("/api/debates", async (_req, res) => {
   if (!db) {
     return res.status(503).json({
-      error: "Supabase is not configured on the server."
+      error: "Supabase is not configured."
     });
   }
 
@@ -149,27 +186,22 @@ app.get("/api/debates", async (_req, res) => {
       .order("created_at", { ascending: false })
       .limit(50);
 
-    if (error) {
-      console.error("Debates query failed:", error.message);
-      return res.status(500).json({
-        error: "Could not load debates."
-      });
-    }
+    if (error) throw error;
 
     return res.json({ debates: data || [] });
   } catch (error) {
-    console.error("Debates endpoint failed:", error.message);
+    console.error("Debates query failed:", error.message);
     return res.status(500).json({
-      error: "Internal server error."
+      error: "Could not load debates."
     });
   }
 });
 
-// Today's e-paper edition
+// Today's e-paper
 app.get("/api/edition", async (_req, res) => {
   if (!db) {
     return res.status(503).json({
-      error: "Supabase is not configured on the server."
+      error: "Supabase is not configured."
     });
   }
 
@@ -182,233 +214,374 @@ app.get("/api/edition", async (_req, res) => {
       .eq("edition_date", today)
       .maybeSingle();
 
-    if (error) {
-      console.error("Edition query failed:", error.message);
-      return res.status(500).json({
-        error: "Could not load the e-paper."
-      });
-    }
+    if (error) throw error;
 
     return res.json({ edition: data || null });
   } catch (error) {
-    console.error("Edition endpoint failed:", error.message);
+    console.error("Edition query failed:", error.message);
     return res.status(500).json({
-      error: "Internal server error."
+      error: "Could not load the e-paper."
     });
   }
 });
 
-/*
- * AI Research:
- * - Uses owner-configured RSS feeds.
- * - Searches related keywords for common topics.
- * - Generates an unpublished draft only.
- * - Does not automatically publish articles.
- */
-app.post(
-  "/api/research",
-  researchRateLimit,
-  async (req, res) => {
-    if (!ai) {
-      return res.status(503).json({
-        error: "GEMINI_API_KEY is not configured."
-      });
-    }
+const topicAliases = {
+  technology: [
+    "technology", "technologies", "tech",
+    "artificial intelligence", "machine learning",
+    "cybersecurity", "software", "robotics", "digital"
+  ],
+  ai: [
+    "artificial intelligence", "machine learning",
+    "generative ai", "chatbot"
+  ],
+  cricket: ["cricket", "test match", "t20", "ipl", "world cup"],
+  politics: ["politics", "political", "government", "parliament", "election"],
+  business: ["business", "economy", "economic", "market", "company"],
+  sports: ["sports", "football", "cricket", "tennis", "olympic"]
+};
 
-    const topic = String(req.body?.topic || "")
-      .trim()
-      .slice(0, 150);
+// Public research generation. This creates a draft only.
+app.post("/api/research", researchRateLimit, async (req, res) => {
+  if (!ai) {
+    return res.status(503).json({
+      error: "GEMINI_API_KEY is not configured."
+    });
+  }
 
-    if (!topic) {
-      return res.status(400).json({
-        error: "Please provide a topic."
-      });
-    }
+  const topic = String(req.body?.topic || "").trim().slice(0, 150);
 
-    const feeds = (process.env.NEWS_FEEDS || "")
-      .split(",")
-      .map((url) => url.trim())
-      .filter(Boolean)
-      .slice(0, 5);
+  if (!topic) {
+    return res.status(400).json({
+      error: "Please provide a topic."
+    });
+  }
 
-    if (feeds.length === 0) {
-      return res.status(400).json({
-        error: "Configure permitted RSS URLs in NEWS_FEEDS first."
-      });
-    }
+  const feeds = (process.env.NEWS_FEEDS || "")
+    .split(",")
+    .map((url) => url.trim())
+    .filter(Boolean)
+    .slice(0, 5);
 
-    const aliases = {
-      technology: [
-        "technology",
-        "technologies",
-        "tech",
-        "artificial intelligence",
-        "machine learning",
-        "cybersecurity",
-        "software",
-        "robotics",
-        "digital"
-      ],
-      ai: [
-        "artificial intelligence",
-        "machine learning",
-        "generative ai",
-        "chatbot"
-      ],
-      cricket: [
-        "cricket",
-        "test match",
-        "t20",
-        "ipl",
-        "world cup"
-      ],
-      politics: [
-        "politics",
-        "political",
-        "government",
-        "parliament",
-        "election"
-      ],
-      business: [
-        "business",
-        "economy",
-        "economic",
-        "market",
-        "company",
-        "companies"
-      ],
-      sports: [
-        "sport",
-        "sports",
-        "football",
-        "cricket",
-        "tennis",
-        "olympic"
-      ]
-    };
+  if (!feeds.length) {
+    return res.status(400).json({
+      error: "Configure NEWS_FEEDS first."
+    });
+  }
 
-    const normalizedTopic = topic.toLowerCase();
-    const keywords = aliases[normalizedTopic] || [normalizedTopic];
+  try {
+    const sources = [];
+    const seen = new Set();
+    const keywords = topicAliases[topic.toLowerCase()] || [topic];
 
-    try {
-      const results = [];
-      const seenLinks = new Set();
+    for (const url of feeds) {
+      try {
+        // Only use feeds configured by the site owner.
+        const feed = await parser.parseURL(url);
 
-      for (const url of feeds) {
-        try {
-          const feed = await parser.parseURL(url);
+        for (const item of feed.items || []) {
+          const title = String(item.title || "");
+          const snippet = String(item.contentSnippet || "")
+            .slice(0, 500);
+          const searchable = `${title} ${snippet}`.toLowerCase();
 
-          for (const item of feed.items || []) {
-            const title = String(item.title || "");
-            const snippet = String(
-              item.contentSnippet || item.content || ""
-            )
-              .replace(/<[^>]*>/g, " ")
-              .slice(0, 1500);
+          if (!keywords.some((word) =>
+            searchable.includes(word.toLowerCase())
+          )) continue;
 
-            const searchableText =
-              ` ${title} ${snippet} `.toLowerCase();
+          const link = String(item.link || "");
 
-            const matched = keywords.some((keyword) =>
-              searchableText.includes(keyword.toLowerCase())
-            );
+          if (link && seen.has(link)) continue;
+          if (link) seen.add(link);
 
-            if (!matched) continue;
-
-            const link = String(item.link || "");
-
-            if (link && seenLinks.has(link)) continue;
-            if (link) seenLinks.add(link);
-
-            results.push({
-              title,
-              link,
-              date: item.isoDate || item.pubDate || null,
-              snippet: snippet.slice(0, 400)
-            });
-          }
-        } catch (error) {
-          console.error("RSS feed failed:", error.message);
+          sources.push({
+            title,
+            url: link,
+            date: item.isoDate || item.pubDate || null,
+            snippet
+          });
         }
+      } catch (error) {
+        console.error("RSS feed failed:", error.message);
       }
+    }
 
-      const selectedResults = results.slice(0, 10);
+    const selectedSources = sources.slice(0, 10);
 
-      if (selectedResults.length === 0) {
-        return res.status(404).json({
-          error:
-            "No matching headlines found in the configured RSS feeds. Try AI, cricket, politics, business, sports, or another specific topic. Nothing was published."
-        });
-      }
-
-      const model = ai.getGenerativeModel({
-        model: process.env.GEMINI_MODEL || "gemini-2.5-flash"
+    if (!selectedSources.length) {
+      return res.status(404).json({
+        error: "No matching headlines found. Nothing was published."
       });
+    }
 
-      const prompt = `
-You are a cautious news research assistant.
+    const model = ai.getGenerativeModel({
+      model: process.env.GEMINI_MODEL || "gemini-3.8-flash"
+    });
 
-Use only the supplied RSS titles, dates and snippets.
-Do not invent facts, quotes, dates, images or locations.
-Do not claim independent verification.
+    const prompt = `
+You are GENWIRE's cautious newsroom research assistant.
+
+Use only the supplied RSS titles, dates, snippets and links.
+Never invent facts, quotes, dates, people or events.
+Do not claim to have read the full linked articles.
+A source mentioning a claim does not prove the claim is true.
 Do not reproduce full source articles.
-Clearly mention uncertainty and missing evidence.
 
-Return a concise JSON object with these keys:
-headline, summary, draft, limitations.
+Return ONLY valid JSON using this schema:
+{
+  "headline": "Proposed headline",
+  "summary": "Brief summary",
+  "draft": "Unpublished article draft",
+  "limitations": ["Missing evidence or context"],
+  "claims": [
+    {
+      "claim": "One specific factual claim",
+      "status": "needs_review",
+      "sourceUrls": ["Exact URL from supplied evidence"],
+      "reason": "What an editor should verify"
+    }
+  ],
+  "checklist": [
+    {
+      "item": "Check the date against the original report",
+      "completed": false
+    }
+  ]
+}
 
-This is an unpublished research draft, not verified news.
-Do not claim that the draft has been published.
+Every claim must start with status "needs_review".
+Do not label any claim verified or proven.
+Only use URLs from the supplied source list.
+If evidence is insufficient, say so.
+Limit the draft to information supported by the supplied snippets.
+The result is not independently verified and must not be published automatically.
 
-Requested topic:
-${topic}
+Topic: ${topic}
 
 RSS evidence:
-${JSON.stringify(selectedResults)}
+${JSON.stringify(selectedSources)}
 `;
 
-      const response = await model.generateContent(prompt);
-      const draft = response.response.text();
+    const response = await model.generateContent(prompt);
+    const raw = response.response.text();
 
-      return res.json({
-        draft,
-        sources: selectedResults,
-        published: false,
-        note:
-          "Research draft only. Verify facts before publication."
-      });
-    } catch (error) {
-      console.error(
-        "Research request failed:",
-        error.message
-      );
+    let research;
+    try {
+      const cleaned = raw
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/\s*```$/, "")
+        .trim();
 
-      return res.status(500).json({
-        error: "Research request failed. Check the server logs."
-      });
+      research = JSON.parse(cleaned);
+    } catch {
+      research = {
+        headline: topic,
+        summary: "AI returned a response that needs editor review.",
+        draft: raw,
+        limitations: ["The AI response was not valid JSON."],
+        claims: [],
+        checklist: [
+          { item: "Review the AI response manually", completed: false }
+        ]
+      };
     }
-  }
-);
 
-// Unknown API endpoints return JSON.
-app.all("/api/*path", (_req, res) => {
-  res.status(404).json({
-    error: "API endpoint not found."
-  });
+    // Normalize statuses and reject source links not in supplied evidence.
+    const allowedUrls = new Set(
+      selectedSources.map((source) => source.url).filter(Boolean)
+    );
+
+    research.claims = (Array.isArray(research.claims)
+      ? research.claims
+      : []).map((claim) => ({
+        claim: String(claim.claim || ""),
+        status: "needs_review",
+        sourceUrls: (Array.isArray(claim.sourceUrls)
+          ? claim.sourceUrls
+          : []).filter((url) => allowedUrls.has(url)),
+        reason: String(claim.reason || "Editor verification required.")
+      }));
+
+    research.checklist = (Array.isArray(research.checklist)
+      ? research.checklist
+      : []).map((item) => ({
+        item: String(item.item || "Review claim"),
+        completed: false
+      }));
+
+    return res.json({
+      research,
+      sources: selectedSources,
+      published: false,
+      note: "Unverified research draft. Editor review is required."
+    });
+  } catch (error) {
+    console.error("Research request failed:", error.message);
+    return res.status(500).json({
+      error: "Research request failed. Check server logs."
+    });
+  }
 });
 
-// Other browser routes serve the homepage.
+// Editor-only: list saved drafts.
+app.get("/api/editor/drafts", requireEditor, async (_req, res) => {
+  try {
+    const { data, error } = await db
+      .from("research_drafts")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+
+    return res.json({ drafts: data || [] });
+  } catch (error) {
+    console.error("Draft list failed:", error.message);
+    return res.status(500).json({
+      error: "Could not load research drafts."
+    });
+  }
+});
+
+// Editor-only: save an AI-generated research draft for review.
+app.post("/api/editor/drafts", requireEditor, async (req, res) => {
+  const { research, sources } = req.body || {};
+
+  if (!research || typeof research !== "object") {
+    return res.status(400).json({
+      error: "A research object is required."
+    });
+  }
+
+  try {
+    const { data, error } = await db
+      .from("research_drafts")
+      .insert({
+        headline: String(research.headline || "").slice(0, 300),
+        summary: String(research.summary || "").slice(0, 2000),
+        body: String(research.draft || "").slice(0, 30000),
+        claims: Array.isArray(research.claims) ? research.claims : [],
+        checklist: Array.isArray(research.checklist)
+          ? research.checklist
+          : [],
+        limitations: Array.isArray(research.limitations)
+          ? research.limitations
+          : [],
+        source_urls: Array.isArray(sources) ? sources : [],
+        status: "pending_review",
+        created_by: req.editor.id
+      })
+      .select("*")
+      .single();
+
+    if (error) throw error;
+
+    return res.status(201).json({
+      draft: data,
+      published: false
+    });
+  } catch (error) {
+    console.error("Draft save failed:", error.message);
+    return res.status(500).json({
+      error: "Could not save the draft. Check the database setup."
+    });
+  }
+});
+
+// Editor-only: approve a draft for editorial workflow.
+// Approval does NOT publish it on the public news page.
+app.post("/api/editor/drafts/:id/approve", requireEditor, async (req, res) => {
+  const id = String(req.params.id || "");
+
+  if (!/^[0-9a-f-]{36}$/i.test(id)) {
+    return res.status(400).json({ error: "Invalid draft ID." });
+  }
+
+  try {
+    const { data, error } = await db
+      .from("research_drafts")
+      .update({
+        status: "approved",
+        reviewed_by: req.editor.id,
+        reviewed_at: new Date().toISOString()
+      })
+      .eq("id", id)
+      .eq("status", "pending_review")
+      .select("id,headline,status,reviewed_at")
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data) {
+      return res.status(404).json({
+        error: "Pending draft not found. It may already be reviewed."
+      });
+    }
+
+    return res.json({
+      draft: data,
+      published: false,
+      note: "Approved for editorial workflow; not publicly published."
+    });
+  } catch (error) {
+    console.error("Draft approval failed:", error.message);
+    return res.status(500).json({
+      error: "Could not approve the draft."
+    });
+  }
+});
+
+// Editor-only: reject a pending draft.
+app.post("/api/editor/drafts/:id/reject", requireEditor, async (req, res) => {
+  const id = String(req.params.id || "");
+
+  if (!/^[0-9a-f-]{36}$/i.test(id)) {
+    return res.status(400).json({ error: "Invalid draft ID." });
+  }
+
+  try {
+    const { data, error } = await db
+      .from("research_drafts")
+      .update({
+        status: "rejected",
+        reviewed_by: req.editor.id,
+        reviewed_at: new Date().toISOString()
+      })
+      .eq("id", id)
+      .eq("status", "pending_review")
+      .select("id,headline,status,reviewed_at")
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data) {
+      return res.status(404).json({
+        error: "Pending draft not found. It may already be reviewed."
+      });
+    }
+
+    return res.json({ draft: data, published: false });
+  } catch (error) {
+    console.error("Draft rejection failed:", error.message);
+    return res.status(500).json({
+      error: "Could not reject the draft."
+    });
+  }
+});
+
+// Unknown API routes return JSON.
+app.all("/api/*path", (_req, res) => {
+  res.status(404).json({ error: "API endpoint not found." });
+});
+
+// Other page routes serve the homepage.
 app.get("*path", (_req, res) => {
   res.sendFile(path.join(root, "index.html"));
 });
 
-// General error handler
 app.use((error, _req, res, _next) => {
   console.error("Server error:", error.message);
-
-  res.status(500).json({
-    error: "Internal server error."
-  });
+  res.status(500).json({ error: "Internal server error." });
 });
 
 app.listen(port, "0.0.0.0", () => {
