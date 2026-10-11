@@ -1,0 +1,402 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GENWIRE | Beyond the Noise</title>
+<style>
+:root {
+  --black:#111;
+  --white:#f7f6f2;
+  --red:#e53935;
+  --line:#dedbd4;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0;
+  color:var(--black);
+  background:var(--white);
+  font-family:Arial,sans-serif;
+}
+.wrap { width:min(1100px,92%); margin:auto; }
+.top {
+  background:var(--black);
+  color:white;
+  padding:9px 0;
+  font-size:11px;
+  letter-spacing:1px;
+}
+header {
+  position:sticky;
+  top:0;
+  z-index:3;
+  background:#f7f6f2ee;
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);
+}
+.nav {
+  padding:17px 0;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  flex-wrap:wrap;
+}
+.logo {
+  font-size:36px;
+  font-weight:1000;
+  letter-spacing:-2px;
+}
+.logo span { color:var(--red); }
+nav { display:flex; gap:14px; flex-wrap:wrap; }
+nav a {
+  font-size:11px;
+  font-weight:bold;
+  text-decoration:none;
+  color:inherit;
+}
+.ticker { background:var(--red); color:white; padding:10px; }
+.hero {
+  background:#111;
+  color:white;
+  margin-top:24px;
+  padding:clamp(25px,5vw,55px);
+  min-height:340px;
+  display:flex;
+  flex-direction:column;
+  justify-content:end;
+  overflow:hidden;
+  position:relative;
+}
+.hero:after {
+  content:"";
+  position:absolute;
+  width:300px;height:300px;
+  right:-70px;top:-90px;
+  border:1px solid #e5393577;
+  border-radius:50%;
+  box-shadow:0 0 0 35px #e5393511,0 0 0 70px #e5393509;
+  animation:float 8s ease-in-out infinite alternate;
+}
+@keyframes float {
+  to { transform:translate(-35px,40px) rotate(25deg); }
+}
+.hero>* { position:relative; z-index:1; }
+.kicker { color:#ff5752; font-weight:bold; letter-spacing:2px; }
+h1 {
+  font-size:clamp(43px,8vw,85px);
+  line-height:.92;
+  letter-spacing:-4px;
+  margin:16px 0;
+}
+h1 span { color:#ff5752; }
+.hero p { max-width:600px; color:#ddd; }
+button,.button {
+  display:inline-block;
+  border:0;
+  padding:12px 16px;
+  background:var(--red);
+  color:white;
+  font-weight:bold;
+  cursor:pointer;
+  text-decoration:none;
+}
+.section {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-bottom:3px solid;
+  margin:35px 0 16px;
+  padding-bottom:8px;
+}
+.section h2 { margin:0; font-size:26px; }
+.small { font-size:11px; color:#666; }
+.panel,.story {
+  padding:20px;
+  background:white;
+  border:1px solid var(--line);
+  margin-bottom:12px;
+}
+.story h3 { font-size:23px; line-height:1.15; }
+.story p { color:#444; }
+.pill {
+  background:#eee;
+  padding:4px 8px;
+  font-size:10px;
+  font-weight:bold;
+}
+.source { font-size:12px; overflow-wrap:anywhere; }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+input,textarea,select {
+  width:100%;
+  padding:11px;
+  border:1px solid #ccc;
+  background:white;
+  margin:6px 0 12px;
+  font:inherit;
+}
+textarea { min-height:100px; }
+label { font-size:12px; font-weight:bold; }
+.status { font-size:12px; white-space:pre-wrap; }
+footer { margin-top:40px; background:#111; color:white; padding:30px 0; }
+footer p { color:#bbb; font-size:12px; }
+@media(max-width:700px) {
+  .grid { grid-template-columns:1fr; }
+  h1 { letter-spacing:-2px; }
+}
+</style>
+</head>
+<body>
+<div class="top"><div class="wrap">INDEPENDENT-MINDED · SOURCE-LINKED · GEN Z NEWS</div></div>
+
+<header>
+<div class="wrap nav">
+  <a href="#" style="color:inherit;text-decoration:none">
+    <div class="logo">GEN<span>WIRE</span></div>
+    <div class="small">BEYOND THE NOISE</div>
+  </a>
+  <nav>
+    <a href="#latest">LATEST</a>
+    <a href="#epaper">E-PAPER</a>
+    <a href="#debates">DEBATES</a>
+    <a href="#citizen">WRITE</a>
+    <a href="#account">ACCOUNT</a>
+  </nav>
+</div>
+</header>
+
+<div class="ticker">
+<div class="wrap">GENWIRE NEWSROOM — Read the sources. Question the claims.</div>
+</div>
+
+<main class="wrap">
+<section class="hero">
+<div class="kicker">THE DAILY BRIEFING</div>
+<h1>THE WORLD.<br><span>WITH CONTEXT.</span></h1>
+<p>News, ideas and citizen voices for the next generation. No made-up headlines. No invented photographs.</p>
+<a class="button" href="#latest">Explore the newsroom ↓</a>
+</section>
+
+<div class="section" id="latest">
+<h2>THE LATEST</h2><span class="small">SOURCE-LINKED REPORTS</span>
+</div>
+<div id="news"><div class="panel">Loading news…</div></div>
+
+<div class="section" id="epaper">
+<h2>THE E-PAPER</h2><span class="small">DAILY EDITION</span>
+</div>
+<div class="panel" id="edition">Checking today's edition…</div>
+
+<div class="section" id="debates">
+<h2>PUBLIC DEBATE</h2><span class="small">YOUR VIEW MATTERS</span>
+</div>
+<div id="debatesList" class="panel">Loading public debates…</div>
+
+<div class="section" id="citizen">
+<h2>CITIZEN VOICES</h2><span class="small">ARTICLES BY READERS</span>
+</div>
+<div class="panel">
+<p>Have an opinion or a reported story? Submit it for review.</p>
+<p class="small">Citizen submissions must remain separate from AI newsroom reports.</p>
+</div>
+
+<div class="section" id="account">
+<h2>YOUR ACCOUNT</h2><span class="small">SIGN IN / SIGN UP</span>
+</div>
+<div class="grid">
+<form class="panel" id="signup">
+<h3>Create your account</h3>
+<label>Display name</label>
+<input id="name" required maxlength="60">
+<label>Email</label>
+<input id="signupEmail" type="email" required>
+<label>Password</label>
+<input id="signupPassword" type="password" minlength="8" required>
+<button>Create account</button>
+<p id="signupStatus" class="status"></p>
+</form>
+
+<form class="panel" id="signin">
+<h3>Welcome back</h3>
+<label>Email</label>
+<input id="loginEmail" type="email" required>
+<label>Password</label>
+<input id="loginPassword" type="password" required>
+<button>Sign in</button>
+<button type="button" id="logout" style="background:#111">Sign out</button>
+<p id="authStatus" class="status">Checking account setup…</p>
+</form>
+</div>
+</main>
+
+<footer><div class="wrap">
+<div class="logo">GEN<span>WIRE</span></div>
+<p>Beyond the noise. Built for curious minds.</p>
+<p>AI-generated content may be wrong. Always check linked sources.</p>
+</div></footer>
+
+<script type="module">
+import { createClient } from
+  "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+const $ = id => document.getElementById(id);
+const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g, c => ({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+}[c]));
+
+let supabase;
+let session;
+
+async function start() {
+  try {
+    const config = await fetch("/api/config").then(r => r.json());
+
+    if (config.supabaseUrl && config.supabaseAnonKey) {
+      supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
+      const result = await supabase.auth.getSession();
+      session = result.data.session;
+      showSession();
+
+      supabase.auth.onAuthStateChange((_event, next) => {
+        session = next;
+        showSession();
+      });
+    } else {
+      $("authStatus").textContent = "Supabase environment variables missing.";
+    }
+  } catch {
+    $("authStatus").textContent = "Backend is not ready yet.";
+  }
+
+  loadNews();
+  loadEdition();
+  loadDebates();
+}
+
+function showSession() {
+  $("authStatus").textContent = session
+    ? "Signed in: " + session.user.email
+    : "You are signed out.";
+}
+
+async function loadNews() {
+  try {
+    const response = await fetch("/api/news");
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+
+    if (!result.articles.length) {
+      $("news").innerHTML =
+        '<div class="panel">No verified/published stories yet.</div>';
+      return;
+    }
+
+    $("news").innerHTML = result.articles.map(article => `
+      <article class="story">
+        <span class="pill">${escapeHTML(article.category)}</span>
+        <h3>${escapeHTML(article.title)}</h3>
+        <p>${escapeHTML(article.summary)}</p>
+        <p class="small">By ${escapeHTML(article.author_name)} ·
+          ${article.published_at
+            ? new Date(article.published_at).toLocaleString()
+            : "Date unavailable"}
+        </p>
+        <details>
+          <summary>Read full article</summary>
+          <p>${escapeHTML(article.body)}</p>
+        </details>
+        <div class="source">
+          ${(article.source_urls || []).map(url =>
+            `<p><a href="${escapeHTML(url)}" target="_blank"
+            rel="noopener noreferrer">Read original source ↗</a></p>`
+          ).join("")}
+        </div>
+      </article>
+    `).join("");
+  } catch (error) {
+    $("news").textContent =
+      error.message || "News service is not configured.";
+  }
+}
+
+async function loadEdition() {
+  try {
+    const result = await fetch("/api/edition").then(r => r.json());
+    $("edition").innerHTML = result.edition
+      ? `<h3>${escapeHTML(result.edition.title)}</h3>
+         <p>${escapeHTML(result.edition.intro)}</p>`
+      : "Today's e-paper is not available yet.";
+  } catch {
+    $("edition").textContent = "E-paper service unavailable.";
+  }
+}
+
+async function loadDebates() {
+  try {
+    const result = await fetch("/api/debates").then(r => r.json());
+    $("debatesList").innerHTML = result.debates?.length
+      ? result.debates.map(debate => `
+          <article class="story">
+            <h3>${escapeHTML(debate.title)}</h3>
+            <p>${escapeHTML(debate.description)}</p>
+          </article>
+        `).join("")
+      : "No debate topics yet.";
+  } catch {
+    $("debatesList").textContent = "Debate service is not configured.";
+  }
+}
+
+$("signup").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  if (!supabase) {
+    $("signupStatus").textContent = "Configure Supabase first.";
+    return;
+  }
+
+  const { data, error } = await supabase.auth.signUp({
+    email: $("signupEmail").value,
+    password: $("signupPassword").value,
+    options: {
+      data: { display_name: $("name").value.trim() }
+    }
+  });
+
+  $("signupStatus").textContent = error
+    ? error.message
+    : data.session
+      ? "Account created and signed in."
+      : "Account created. Check your email for confirmation.";
+});
+
+$("signin").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  if (!supabase) {
+    $("authStatus").textContent = "Configure Supabase first.";
+    return;
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: $("loginEmail").value,
+    password: $("loginPassword").value
+  });
+
+  $("authStatus").textContent = error
+    ? error.message
+    : "Signed in: " + data.user.email;
+});
+
+$("logout").addEventListener("click", async () => {
+  if (!supabase) return;
+  await supabase.auth.signOut();
+  session = null;
+  showSession();
+});
+
+start();
+</script>
+</body>
+</html>
